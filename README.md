@@ -89,3 +89,25 @@ npm run dev
 # Build for production
 npm run build
 ```
+
+## Native Desktop Apps (Windows, macOS, Linux)
+
+Aningu is packaged as a native desktop application powered by **Electron**:
+
+- **Windows:** Native `.exe` installer (NSIS) and standalone portable executable.
+- **macOS:** Universal `.dmg` installer and `.zip` for Apple Silicon (M-series) and Intel Macs.
+- **Linux:** `.AppImage` (runs on Ubuntu, Fedora, Arch, Debian) and `.deb` package.
+
+### Desktop Commands
+```bash
+# Run desktop app locally in development
+npm run electron:start
+
+# Build native desktop installers
+npm run electron:build        # Current OS
+npm run electron:build:win    # Windows installer
+npm run electron:build:mac    # macOS DMG
+npm run electron:build:linux  # Linux AppImage
+```
+
+Automated builds run on GitHub Actions (`.github/workflows/build-desktop.yml`) on every push to `main`, publishing artifacts directly to GitHub Releases.

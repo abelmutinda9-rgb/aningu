@@ -1,0 +1,64 @@
+name: Build Desktop Apps (Windows, macOS, Linux)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    name: Build Desktop Native App (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Build Native Windows App (.exe)
+        if: matrix.os == 'windows-latest'
+        run: npx electron-builder --win
+
+      - name: Build Native macOS App (.dmg)
+        if: matrix.os == 'macos-latest'
+        run: npx electron-builder --mac
+
+      - name: Build Native Linux App (.AppImage & .deb)
+        if: matrix.os == 'ubuntu-latest'
+        run: npx electron-builder --linux
+
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aningu-desktop-${{ matrix.os }}
+          path: release/*.*
+          retention-days: 30
+
+      - name: Attach Desktop Binaries to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true
+        with:
+          tag_name: latest
+          name: "Aningu Universal Release"
+          files: release/*.*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

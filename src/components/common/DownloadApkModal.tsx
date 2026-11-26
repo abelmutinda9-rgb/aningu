@@ -5,33 +5,40 @@ import {
   Smartphone,
   Tv,
   Laptop,
-  CheckCircle2,
   HardDrive,
   ExternalLink,
   ShieldCheck,
   Globe,
-  Radio,
+  Monitor,
+  Apple,
+  Terminal,
 } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 export const DownloadApkModal: React.FC = () => {
   const { isDownloadModalOpen, setIsDownloadModalOpen } = usePlayer();
-  const [activeTab, setActiveTab] = useState<'phone' | 'tv' | 'laptop'>('phone');
+  const [activeTab, setActiveTab] = useState<'laptop' | 'phone' | 'tv'>('laptop');
 
   if (!isDownloadModalOpen) return null;
 
-  // Direct APK download link from GitHub Releases
+  // GitHub Releases direct links
+  const repoReleasesUrl = 'https://github.com/abelmutinda9-rgb/aningu/releases';
   const apkDownloadUrl =
     'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/aningu-universal.apk';
+  const winDownloadUrl =
+    'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/Aningu-Windows-Setup-1.0.0.exe';
+  const macDownloadUrl =
+    'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/Aningu-macOS-1.0.0.dmg';
+  const linuxDownloadUrl =
+    'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/Aningu-Linux-1.0.0.AppImage';
 
   const handleInstallPwa = async () => {
-    // If browser deferred install prompt is available
     const promptEvent = (window as any).deferredPrompt;
     if (promptEvent) {
       promptEvent.prompt();
     } else {
       alert(
-        'To install Aningu on your laptop:\n1. Look at the top right of your browser address bar (Chrome, Edge, or Brave).\n2. Click the "Install App" or "+" icon.\n3. Aningu will open in its own dedicated, native desktop window!'
+        'To install Aningu as an instant desktop app:\n1. Look at the top right of your browser address bar (Chrome, Edge, or Brave).\n2. Click the "Install App" or "+" icon.\n3. Aningu will open in its own dedicated, native desktop window with 0 download lag!'
       );
     }
   };
@@ -47,10 +54,10 @@ export const DownloadApkModal: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-black text-white tracking-tight">
-                Get Aningu Everywhere
+                Download Aningu
               </h2>
               <p className="text-xs text-[#a7a7a7]">
-                Choose your device: Android Phones, Smart TVs, or Laptops
+                Native desktop apps for Laptops, APK for Android Phones, and Smart TVs
               </p>
             </div>
           </div>
@@ -65,6 +72,18 @@ export const DownloadApkModal: React.FC = () => {
         {/* Device Switcher Tabs */}
         <div className="flex border-b border-[#282828] bg-[#141414]">
           <button
+            onClick={() => setActiveTab('laptop')}
+            className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
+              activeTab === 'laptop'
+                ? 'border-[#1ED760] text-[#1ED760] bg-[#1a1a1a]'
+                : 'border-transparent text-[#a7a7a7] hover:text-white'
+            }`}
+          >
+            <Laptop size={16} />
+            <span>Laptops & PC (Win / Mac / Linux)</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('phone')}
             className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
               activeTab === 'phone'
@@ -73,7 +92,7 @@ export const DownloadApkModal: React.FC = () => {
             }`}
           >
             <Smartphone size={16} />
-            <span>Android Phone / Tablet</span>
+            <span>Android Phone</span>
           </button>
 
           <button
@@ -85,25 +104,125 @@ export const DownloadApkModal: React.FC = () => {
             }`}
           >
             <Tv size={16} />
-            <span>Android TV & Fire TV</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('laptop')}
-            className={`flex-1 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all ${
-              activeTab === 'laptop'
-                ? 'border-[#1ED760] text-[#1ED760] bg-[#1a1a1a]'
-                : 'border-transparent text-[#a7a7a7] hover:text-white'
-            }`}
-          >
-            <Laptop size={16} />
-            <span>Laptops (Win / Mac / Linux)</span>
+            <span>Smart TV</span>
           </button>
         </div>
 
         {/* Tab Contents */}
         <div className="p-6 overflow-y-auto space-y-6">
-          {/* TAB 1: Android Phone & Tablet */}
+          {/* TAB 1: Laptops (Windows, Mac, Linux) */}
+          {activeTab === 'laptop' && (
+            <div className="space-y-5">
+              <div className="p-4 rounded-xl bg-[#202020] border border-white/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-white text-base flex items-center gap-2">
+                    <Laptop size={18} className="text-[#1ED760]" />
+                    Native Desktop Apps for Laptops
+                  </div>
+                  <span className="text-[10px] font-bold text-[#1ED760] bg-[#1ED760]/10 px-2 py-0.5 rounded">
+                    Electron Native
+                  </span>
+                </div>
+                <p className="text-xs text-[#a7a7a7] leading-relaxed">
+                  Enjoy Aningu as a standalone desktop music player with native window controls, hardware audio decoding, media keyboard shortcuts, and offline music caching.
+                </p>
+
+                {/* 3 Native Platform Download Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  {/* Windows */}
+                  <a
+                    href={winDownloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3.5 rounded-xl bg-[#252525] hover:bg-[#2c2c2c] border border-white/10 hover:border-[#1ED760]/50 transition-all flex flex-col items-center text-center gap-2 group"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#0078D4]/20 text-[#0078D4] flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Monitor size={18} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-xs">Windows (.exe)</div>
+                      <div className="text-[10px] text-[#a7a7a7]">Win 10 & 11</div>
+                    </div>
+                    <span className="mt-1 px-3 py-1 rounded-full bg-[#1ED760] text-black font-extrabold text-[10px] flex items-center gap-1">
+                      <Download size={11} /> Download
+                    </span>
+                  </a>
+
+                  {/* macOS */}
+                  <a
+                    href={macDownloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3.5 rounded-xl bg-[#252525] hover:bg-[#2c2c2c] border border-white/10 hover:border-[#1ED760]/50 transition-all flex flex-col items-center text-center gap-2 group"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Apple size={18} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-xs">macOS (.dmg)</div>
+                      <div className="text-[10px] text-[#a7a7a7]">Apple Silicon & Intel</div>
+                    </div>
+                    <span className="mt-1 px-3 py-1 rounded-full bg-[#1ED760] text-black font-extrabold text-[10px] flex items-center gap-1">
+                      <Download size={11} /> Download
+                    </span>
+                  </a>
+
+                  {/* Linux */}
+                  <a
+                    href={linuxDownloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3.5 rounded-xl bg-[#252525] hover:bg-[#2c2c2c] border border-white/10 hover:border-[#1ED760]/50 transition-all flex flex-col items-center text-center gap-2 group"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#E95420]/20 text-[#E95420] flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Terminal size={18} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-xs">Linux (.AppImage)</div>
+                      <div className="text-[10px] text-[#a7a7a7]">Ubuntu, Fedora, Arch</div>
+                    </div>
+                    <span className="mt-1 px-3 py-1 rounded-full bg-[#1ED760] text-black font-extrabold text-[10px] flex items-center gap-1">
+                      <Download size={11} /> Download
+                    </span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Instant Browser Install Alternative */}
+              <div className="p-4 rounded-xl bg-[#202020] border border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="space-y-0.5 text-center sm:text-left">
+                  <div className="text-xs font-bold text-white">
+                    Instant Browser App (PWA)
+                  </div>
+                  <div className="text-[11px] text-[#a7a7a7]">
+                    No installer download needed. Opens in a dedicated window immediately.
+                  </div>
+                </div>
+                <button
+                  onClick={handleInstallPwa}
+                  className="px-4 py-2 rounded-full bg-[#2a2a2a] hover:bg-[#333] border border-white/10 text-white font-bold text-xs flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shrink-0"
+                >
+                  <Download size={14} className="text-[#1ED760]" />
+                  <span>Install in Browser</span>
+                </button>
+              </div>
+
+              {/* Link to all releases */}
+              <div className="text-center pt-1">
+                <a
+                  href={repoReleasesUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#a7a7a7] hover:text-[#1ED760] inline-flex items-center gap-1 transition-colors underline"
+                >
+                  <span>View all releases and build artifacts on GitHub</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: Android Phone & Tablet */}
           {activeTab === 'phone' && (
             <div className="space-y-5">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-[#202020] border border-white/5">
@@ -123,7 +242,7 @@ export const DownloadApkModal: React.FC = () => {
                   className="px-6 py-3 rounded-full bg-[#1ED760] hover:bg-[#1fdf64] text-black font-extrabold text-sm flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0"
                 >
                   <Download size={18} />
-                  <span>Download .APK (Direct)</span>
+                  <span>Download .APK</span>
                 </a>
               </div>
 
@@ -170,7 +289,7 @@ export const DownloadApkModal: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: Smart TVs */}
+          {/* TAB 3: Smart TVs */}
           {activeTab === 'tv' && (
             <div className="space-y-5">
               <div className="p-4 rounded-xl bg-[#202020] border border-white/5 space-y-3">
@@ -224,57 +343,6 @@ export const DownloadApkModal: React.FC = () => {
                     1. Open the TV web browser.<br />
                     2. Go to <code className="text-[#1ED760]">aningu.vercel.app</code>.<br />
                     3. Click the <strong>Fullscreen button</strong> on the top right to hide browser bars and enjoy full 10-foot remote experience!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: Laptops & Desktops */}
-          {activeTab === 'laptop' && (
-            <div className="space-y-5">
-              <div className="p-4 rounded-xl bg-[#202020] border border-white/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-white text-base flex items-center gap-2">
-                    <Laptop size={18} className="text-[#1ED760]" />
-                    Windows, Mac, Linux & Chromebooks
-                  </div>
-                  <span className="text-[10px] font-bold text-[#1ED760] bg-[#1ED760]/10 px-2 py-0.5 rounded">
-                    Universal Laptop App
-                  </span>
-                </div>
-                <p className="text-xs text-[#a7a7a7] leading-relaxed">
-                  Aningu works on every laptop! You can use it directly in any modern browser, or install it as a standalone desktop app with its own dock icon, keyboard shortcuts, and offline mode.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <button
-                    onClick={handleInstallPwa}
-                    className="px-5 py-2.5 rounded-full bg-[#1ED760] hover:bg-[#1fdf64] text-black font-extrabold text-xs flex items-center gap-2 shadow-md hover:scale-105 active:scale-95 transition-all"
-                  >
-                    <Download size={15} />
-                    <span>Install Aningu on Laptop</span>
-                  </button>
-                  <span className="text-[11px] text-[#a7a7a7]">
-                    Runs in dedicated window with 0 install lag
-                  </span>
-                </div>
-              </div>
-
-              {/* Instructions for browser desktop app */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#a7a7a7]">
-                  How to Install on Chrome, Edge & Brave
-                </h4>
-                <div className="p-3.5 rounded-lg bg-[#242424] text-xs text-[#a7a7a7] space-y-1.5 leading-relaxed">
-                  <p>
-                    <strong className="text-white">1.</strong> In your laptop's address bar (at the far right), look for the <strong className="text-[#1ED760]">Install</strong> icon or a small <strong className="text-white">(+)</strong> button.
-                  </p>
-                  <p>
-                    <strong className="text-white">2.</strong> Click <strong className="text-white">"Install Aningu"</strong>.
-                  </p>
-                  <p>
-                    <strong className="text-white">3.</strong> Aningu will appear on your Desktop, Windows Start Menu, or Mac Applications folder!
                   </p>
                 </div>
               </div>
