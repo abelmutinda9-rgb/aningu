@@ -21,16 +21,10 @@ export const DownloadApkModal: React.FC = () => {
 
   if (!isDownloadModalOpen) return null;
 
-  // GitHub Releases direct links
+  // GitHub Releases links
   const repoReleasesUrl = 'https://github.com/abelmutinda9-rgb/aningu/releases';
   const apkDownloadUrl =
-    'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/aningu-universal.apk';
-  const winDownloadUrl =
-    'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/Aningu-Windows-Setup-1.0.0.exe';
-  const macDownloadUrl =
-    'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/Aningu-macOS-1.0.0.dmg';
-  const linuxDownloadUrl =
-    'https://github.com/abelmutinda9-rgb/aningu/releases/latest/download/Aningu-Linux-1.0.0.AppImage';
+    'https://github.com/abelmutinda9-rgb/aningu/releases/download/latest/aningu-universal.apk';
 
   const handleInstallPwa = async () => {
     const promptEvent = (window as any).deferredPrompt;
@@ -80,7 +74,7 @@ export const DownloadApkModal: React.FC = () => {
             }`}
           >
             <Laptop size={16} />
-            <span>Laptops & PC (Win / Mac / Linux)</span>
+            <span>Laptops (Win / Mac / Linux)</span>
           </button>
 
           <button
@@ -131,7 +125,7 @@ export const DownloadApkModal: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   {/* Windows */}
                   <a
-                    href={winDownloadUrl}
+                    href={repoReleasesUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-3.5 rounded-xl bg-[#252525] hover:bg-[#2c2c2c] border border-white/10 hover:border-[#1ED760]/50 transition-all flex flex-col items-center text-center gap-2 group"
@@ -141,16 +135,16 @@ export const DownloadApkModal: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-bold text-white text-xs">Windows (.exe)</div>
-                      <div className="text-[10px] text-[#a7a7a7]">Win 10 & 11</div>
+                      <div className="text-[10px] text-[#a7a7a7]">Win 10 & 11 (64-bit)</div>
                     </div>
                     <span className="mt-1 px-3 py-1 rounded-full bg-[#1ED760] text-black font-extrabold text-[10px] flex items-center gap-1">
-                      <Download size={11} /> Download
+                      <Download size={11} /> Download .exe
                     </span>
                   </a>
 
                   {/* macOS */}
                   <a
-                    href={macDownloadUrl}
+                    href={repoReleasesUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-3.5 rounded-xl bg-[#252525] hover:bg-[#2c2c2c] border border-white/10 hover:border-[#1ED760]/50 transition-all flex flex-col items-center text-center gap-2 group"
@@ -163,13 +157,13 @@ export const DownloadApkModal: React.FC = () => {
                       <div className="text-[10px] text-[#a7a7a7]">Apple Silicon & Intel</div>
                     </div>
                     <span className="mt-1 px-3 py-1 rounded-full bg-[#1ED760] text-black font-extrabold text-[10px] flex items-center gap-1">
-                      <Download size={11} /> Download
+                      <Download size={11} /> Download .dmg
                     </span>
                   </a>
 
                   {/* Linux */}
                   <a
-                    href={linuxDownloadUrl}
+                    href={repoReleasesUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-3.5 rounded-xl bg-[#252525] hover:bg-[#2c2c2c] border border-white/10 hover:border-[#1ED760]/50 transition-all flex flex-col items-center text-center gap-2 group"
@@ -179,7 +173,7 @@ export const DownloadApkModal: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-bold text-white text-xs">Linux (.AppImage)</div>
-                      <div className="text-[10px] text-[#a7a7a7]">Ubuntu, Fedora, Arch</div>
+                      <div className="text-[10px] text-[#a7a7a7]">Ubuntu, Debian, Fedora</div>
                     </div>
                     <span className="mt-1 px-3 py-1 rounded-full bg-[#1ED760] text-black font-extrabold text-[10px] flex items-center gap-1">
                       <Download size={11} /> Download

@@ -54,16 +54,14 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "artifactName": "Aningu-Windows-Setup-."
+      ]
     },
     "mac": {
       "target": [
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.music",
-      "artifactName": "Aningu-macOS-."
+      "category": "public.app-category.music"
     },
     "linux": {
       "target": [
@@ -71,7 +69,11 @@
         "deb"
       ],
       "category": "Audio",
-      "artifactName": "Aningu-Linux-."
+      "maintainer": "Abel Mutuku <abelmutuku0@gmail.com>"
     }
+  },
+  "author": {
+    "name": "Abel Mutuku",
+    "email": "abelmutuku0@gmail.com"
   }
 }
