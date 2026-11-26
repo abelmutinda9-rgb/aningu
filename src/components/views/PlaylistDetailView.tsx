@@ -1,7 +1,17 @@
 import React from 'react';
-import { Play, Pause, Heart, Clock, MoreHorizontal, ArrowLeft } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Heart,
+  Clock,
+  MoreHorizontal,
+  ArrowLeft,
+  ListPlus,
+  Download,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
-import { Track } from '../../types';
 
 export const PlaylistDetailView: React.FC = () => {
   const {
@@ -13,6 +23,13 @@ export const PlaylistDetailView: React.FC = () => {
     likedTrackIds,
     toggleLike,
     setViewMode,
+    playNext,
+    addToQueue,
+    downloadTrack,
+    downloadPlaylistAction,
+    isDownloadingPlaylist,
+    playlistDownloadProgress,
+    downloadedTrackIds,
   } = usePlayer();
 
   if (!selectedPlaylist) return null;
@@ -27,6 +44,10 @@ export const PlaylistDetailView: React.FC = () => {
   );
   const totalMins = Math.floor(totalDuration / 60);
 
+  const isAllDownloaded =
+    selectedPlaylist.tracks.length > 0 &&
+    selectedPlaylist.tracks.every(t => downloadedTrackIds.has(t.id));
+
   const handlePlayFirst = () => {
     if (selectedPlaylist.tracks.length === 0) return;
     if (isCurrentPlaylistPlaying) {
@@ -34,6 +55,11 @@ export const PlaylistDetailView: React.FC = () => {
     } else {
       playTrack(selectedPlaylist.tracks[0], selectedPlaylist.tracks);
     }
+  };
+
+  const handleDownloadPlaylist = () => {
+    if (isDownloadingPlaylist) return;
+    downloadPlaylistAction(selectedPlaylist.tracks);
   };
 
   return (
@@ -86,7 +112,7 @@ export const PlaylistDetailView: React.FC = () => {
         </div>
       </div>
 
-      {/* Action Buttons Bar */}
+      {/* Action Buttons Bar: Play, Download Playlist, More */}
       <div className="px-6 sm:px-8 py-5 flex items-center gap-6">
         <button
           onClick={handlePlayFirst}
@@ -99,14 +125,45 @@ export const PlaylistDetailView: React.FC = () => {
           )}
         </button>
 
-        <button className="text-[#a7a7a7] hover:text-white transition-colors">
+        {/* Spotify-style Download Entire Playlist button */}
+        <button
+          onClick={handleDownloadPlaylist}
+          disabled={isDownloadingPlaylist}
+          className={`p-3 rounded-full transition-all flex items-center gap-2 ${
+            isAllDownloaded
+              ? 'text-[#1ED760] bg-[#1ED760]/10 hover:bg-[#1ED760]/20'
+              : 'text-[#a7a7a7] hover:text-white hover:bg-white/10'
+          }`}
+          title={isAllDownloaded ? 'Playlist Downloaded' : 'Download Playlist'}
+        >
+          {isDownloadingPlaylist ? (
+            <Loader2 size={24} className="animate-spin text-[#1ED760]" />
+          ) : isAllDownloaded ? (
+            <CheckCircle2 size={26} className="text-[#1ED760]" />
+          ) : (
+            <Download size={24} />
+          )}
+        </button>
+
+        {/* Progress indicator during playlist download */}
+        {playlistDownloadProgress && (
+          <div className="text-xs text-[#a7a7a7] flex items-center gap-2 bg-[#181818] px-3 py-1.5 rounded-full border border-white/5">
+            <span className="w-2 h-2 rounded-full bg-[#1ED760] animate-ping" />
+            <span>
+              Downloading {playlistDownloadProgress.completed} of{' '}
+              {playlistDownloadProgress.total} songs...
+            </span>
+          </div>
+        )}
+
+        <button className="text-[#a7a7a7] hover:text-white transition-colors ml-auto sm:ml-0">
           <MoreHorizontal size={28} />
         </button>
       </div>
 
       {/* Track List Header Table */}
       <div className="px-6 sm:px-8">
-        <div className="grid grid-cols-[16px_1fr_40px] sm:grid-cols-[16px_1fr_1fr_40px] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#a7a7a7] border-b border-[#242424]">
+        <div className="grid grid-cols-[16px_1fr_40px] sm:grid-cols-[16px_1fr_1fr_100px] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#a7a7a7] border-b border-[#242424]">
           <span>#</span>
           <span>Title</span>
           <span className="hidden sm:inline">Album</span>
@@ -120,12 +177,13 @@ export const PlaylistDetailView: React.FC = () => {
           {selectedPlaylist.tracks.map((track, idx) => {
             const isTrackCurrent = currentTrack?.id === track.id;
             const isLiked = likedTrackIds.has(track.id);
+            const isDownloaded = downloadedTrackIds.has(track.id);
 
             return (
               <div
                 key={track.id}
                 onClick={() => playTrack(track, selectedPlaylist.tracks)}
-                className={`grid grid-cols-[16px_1fr_40px] sm:grid-cols-[16px_1fr_1fr_40px] gap-4 px-4 py-2.5 rounded-md hover:bg-[#242424] items-center cursor-pointer group transition-colors ${
+                className={`grid grid-cols-[16px_1fr_40px] sm:grid-cols-[16px_1fr_1fr_100px] gap-4 px-4 py-2.5 rounded-md hover:bg-[#242424] items-center cursor-pointer group transition-colors ${
                   isTrackCurrent ? 'bg-[#242424]' : ''
                 }`}
               >
@@ -179,21 +237,54 @@ export const PlaylistDetailView: React.FC = () => {
                   {track.album || track.title}
                 </span>
 
-                {/* Actions: Heart + Duration */}
-                <div className="flex items-center justify-end gap-3 text-xs text-[#a7a7a7] tabular-nums">
+                {/* Actions: Download + Play Next + Heart + Duration */}
+                <div className="flex items-center justify-end gap-2.5 text-xs text-[#a7a7a7] tabular-nums">
+                  {/* Download Song Button */}
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      downloadTrack(track);
+                    }}
+                    className={`transition-colors p-1 ${
+                      isDownloaded
+                        ? 'text-[#1ED760]'
+                        : 'opacity-0 group-hover:opacity-100 hover:text-[#1ED760]'
+                    }`}
+                    title={isDownloaded ? 'Song Downloaded' : 'Download Song'}
+                  >
+                    {isDownloaded ? (
+                      <CheckCircle2 size={16} />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      playNext(track);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 hover:text-[#1ED760] transition-opacity p-1"
+                    title="Play Next"
+                  >
+                    <ListPlus size={16} />
+                  </button>
+
                   <button
                     onClick={e => {
                       e.stopPropagation();
                       toggleLike(track.id);
                     }}
-                    className={`transition-colors ${
+                    className={`p-1 transition-colors ${
                       isLiked
                         ? 'text-[#1ED760]'
                         : 'opacity-0 group-hover:opacity-100 hover:text-white'
                     }`}
+                    title={isLiked ? 'Unlike' : 'Like'}
                   >
                     <Heart size={16} fill={isLiked ? '#1ED760' : 'none'} />
                   </button>
+
                   <span>
                     {Math.floor(track.duration / 60)}:
                     {Math.floor(track.duration % 60)

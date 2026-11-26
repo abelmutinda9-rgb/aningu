@@ -12,15 +12,18 @@ import {
   VolumeX,
   Mic2,
   Tv,
-  Maximize2,
   Sliders,
   Check,
+  ListMusic,
+  Download,
+  CheckCircle2,
 } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 
 export const PlayerBar: React.FC = () => {
   const {
     currentTrack,
+    queue,
     isPlaying,
     currentTime,
     duration,
@@ -44,8 +47,14 @@ export const PlayerBar: React.FC = () => {
     toggleLike,
     setIsLyricsOpen,
     isLyricsOpen,
+    isQueueOpen,
+    setIsQueueOpen,
     setDeviceView,
     deviceView,
+    crossfadeDuration,
+    setCrossfadeDuration,
+    downloadTrack,
+    downloadedTrackIds,
   } = usePlayer();
 
   const [isDeviceMenuOpen, setIsDeviceMenuOpen] = useState(false);
@@ -54,6 +63,7 @@ export const PlayerBar: React.FC = () => {
   if (!currentTrack) return null;
 
   const isLiked = likedTrackIds.has(currentTrack.id);
+  const isDownloaded = downloadedTrackIds.has(currentTrack.id);
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const formatTime = (secs: number) => {
@@ -65,7 +75,7 @@ export const PlayerBar: React.FC = () => {
   return (
     <footer className="h-20 sm:h-[90px] bg-[#121212] border-t border-[#242424] px-4 flex items-center justify-between text-white select-none z-40 relative">
       {/* Left: Track Information */}
-      <div className="flex items-center gap-3 w-1/4 min-w-[180px] max-w-[300px]">
+      <div className="flex items-center gap-3 w-1/4 min-w-[200px] max-w-[320px]">
         <img
           src={currentTrack.coverUrl}
           alt={currentTrack.title}
@@ -79,15 +89,29 @@ export const PlayerBar: React.FC = () => {
             {currentTrack.artist}
           </p>
         </div>
-        <button
-          onClick={() => toggleLike(currentTrack.id)}
-          className={`shrink-0 ml-1 hover:scale-110 transition-transform ${
-            isLiked ? 'text-[#1ED760]' : 'text-[#a7a7a7] hover:text-white'
-          }`}
-          title={isLiked ? 'Remove from Your Library' : 'Save to Your Library'}
-        >
-          <Heart size={18} fill={isLiked ? '#1ED760' : 'none'} />
-        </button>
+
+        <div className="flex items-center gap-1.5 shrink-0 ml-1">
+          <button
+            onClick={() => toggleLike(currentTrack.id)}
+            className={`hover:scale-110 transition-transform ${
+              isLiked ? 'text-[#1ED760]' : 'text-[#a7a7a7] hover:text-white'
+            }`}
+            title={isLiked ? 'Remove from Your Library' : 'Save to Your Library'}
+          >
+            <Heart size={18} fill={isLiked ? '#1ED760' : 'none'} />
+          </button>
+
+          {/* Download Song Button */}
+          <button
+            onClick={() => downloadTrack(currentTrack)}
+            className={`hover:scale-110 transition-transform ${
+              isDownloaded ? 'text-[#1ED760]' : 'text-[#a7a7a7] hover:text-white'
+            }`}
+            title={isDownloaded ? 'Downloaded Offline' : 'Download Song'}
+          >
+            {isDownloaded ? <CheckCircle2 size={18} /> : <Download size={18} />}
+          </button>
+        </div>
       </div>
 
       {/* Center: Playback Controls & Scrubber */}
@@ -164,8 +188,8 @@ export const PlayerBar: React.FC = () => {
         </div>
       </div>
 
-      {/* Right: Audio Features, Devices, Volume */}
-      <div className="hidden md:flex items-center justify-end gap-3 w-1/4 min-w-[200px]">
+      {/* Right: Audio Features, Queue, Devices, Volume */}
+      <div className="hidden md:flex items-center justify-end gap-3 w-1/4 min-w-[220px]">
         {/* Lyrics Toggle */}
         <button
           onClick={() => setIsLyricsOpen(!isLyricsOpen)}
@@ -179,22 +203,40 @@ export const PlayerBar: React.FC = () => {
           <Mic2 size={18} />
         </button>
 
+        {/* Up Next Queue Toggle */}
+        <button
+          onClick={() => setIsQueueOpen(!isQueueOpen)}
+          className={`p-2 rounded-full transition-colors relative ${
+            isQueueOpen
+              ? 'text-[#1ED760] bg-white/10'
+              : 'text-[#a7a7a7] hover:text-white'
+          }`}
+          title="Play Queue"
+        >
+          <ListMusic size={18} />
+          {queue.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#1ED760] text-black text-[9px] font-black grid place-items-center">
+              {queue.length > 9 ? '9+' : queue.length}
+            </span>
+          )}
+        </button>
+
         {/* DSP Audio Settings Button */}
         <div className="relative">
           <button
             onClick={() => setIsDspMenuOpen(o => !o)}
             className={`p-2 rounded-full transition-colors ${
-              isWarmthEnabled || isLufsNormalized
+              isWarmthEnabled || isLufsNormalized || crossfadeDuration > 0
                 ? 'text-[#1ED760] bg-[#1ED760]/10'
                 : 'text-[#a7a7a7] hover:text-white'
             }`}
-            title="Audio Quality & DSP Settings"
+            title="Audio Quality & Crossfade Settings"
           >
             <Sliders size={18} />
           </button>
 
           {isDspMenuOpen && (
-            <div className="absolute bottom-12 right-0 w-64 bg-[#1f1f1f] border border-[#2a2a2a] rounded-lg p-3 shadow-2xl z-50 text-xs">
+            <div className="absolute bottom-12 right-0 w-68 bg-[#1f1f1f] border border-[#2a2a2a] rounded-lg p-3.5 shadow-2xl z-50 text-xs">
               <div className="font-bold text-white mb-2 flex items-center justify-between">
                 <span>Audio Engine DSP</span>
                 <span className="text-[10px] text-[#1ED760] font-mono">ITU-R BS.1770</span>
@@ -234,6 +276,25 @@ export const PlayerBar: React.FC = () => {
                 >
                   {isWarmthEnabled && <Check size={12} strokeWidth={3} />}
                 </div>
+              </div>
+
+              {/* Crossfade Quick Slider */}
+              <div className="p-2 border-t border-[#2a2a2a] mt-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-white">Crossfade</span>
+                  <span className="text-[#1ED760] font-mono text-[11px]">
+                    {crossfadeDuration === 0 ? 'Off' : `${crossfadeDuration}s`}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="12"
+                  step="1"
+                  value={crossfadeDuration}
+                  onChange={e => setCrossfadeDuration(Number(e.target.value))}
+                  className="w-full h-1 bg-[#282828] rounded-lg appearance-none cursor-pointer accent-[#1ED760]"
+                />
               </div>
             </div>
           )}

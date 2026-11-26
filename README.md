@@ -1,85 +1,91 @@
-# aningu. — Sound in Motion
+# ANINGU 🎵
+> Premium Spotify-Grade Music Experience for Web, Android Phones & Smart TVs.
 
-<p align="center">
-  <img src="./public/favicon.svg" width="96" height="96" alt="Aningu Acoustic A Icon" />
-</p>
-
-Aningu is a high-fidelity, keyless music streaming application crafted for **Phones (iOS & Android)**, **Desktop Workstations (macOS & Windows)**, and **10-Foot Living Room Smart TVs**.
-
-Built with the authentic **Classic Dark** design system (`#121212` background, `#181818` surfaces, `#1ED760` accents, Figtree typography, compact information density, and restrained flat UI—free of AI gradients or decorative styling).
-
----
-
-## ⚡ Core Features
-
-- **Multi-Device Responsive Architecture**:
-  - **Desktop 3-Column Workstation**: Sidebar library, fluid central discovery canvas, collapsible Now Playing inspector, and fixed high-precision playback deck.
-  - **Mobile Native Feed**: Compact header greeting, 6-pack quick access grid, sticky mini-player with progress line, and bottom navigation.
-  - **TV 10-Foot Big Screen**: 16:9 widescreen layout, full-screen live synchronized lyrics, large album art display, and Phone Remote Pairing (`PIN: 749-012`).
-- **2026 Aningu Wrapped**:
-  - Multi-slide interactive story deck with auto-advance and swipe/tap controls.
-  - Minutes listened breakdown (48,220 minutes / Top 0.5% globally).
-  - #1 Top Artist spotlight (Frank Ocean, 142 plays of *Nights*).
-  - Top 5 Tracks countdown and Audio Personality card ("The Luminary").
-- **Live Synchronized Lyrics**:
-  - Fullscreen lyrics modal with auto-scrolling line centering.
-  - Interactive line scrubbing: click/tap any lyric line to jump playback directly to that timestamp.
-  - Keyless lyrics engine powered by **LRCLIB**.
-- **ITU-R BS.1770 Broadcast Audio DSP Engine**:
-  - Web Audio graph with `-14 LUFS` loudness normalization (Spotify broadcast standard).
-  - Optional toggleable **Analog Warmth EQ profile** (220Hz low-shelf warmth boost with high-frequency contouring).
-  - 320 kbps Opus transparent streaming architecture.
-- **100% Keyless Music & Metadata**:
-  - Zero API keys, secrets, or paid accounts required.
-  - Public Audius streaming network integration, LRCLIB lyrics, and seeded high-fidelity catalogs.
-  - Full local playlist management with browser `localStorage` persistence.
+![React](https://img.shields.io/badge/React-19-blue?style=flat-square&logo=react)
+![Vite](https://img.shields.io/badge/Vite-6-purple?style=flat-square&logo=vite)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-v4-38B2AC?style=flat-square&logo=tailwind-css)
+![Capacitor](https://img.shields.io/badge/Capacitor-Android-119EFF?style=flat-square&logo=capacitor)
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 ---
 
-## 🚀 Getting Started
+## ⚡ What's in Aningu
 
-### Prerequisites
+1. **Spotify-Grade Playback & DSP Engine**
+   - **Up Next Play Queue**: View upcoming tracks, reorder or remove songs, clear queue, and tap **Play Next** on any track in playlists, albums, and search.
+   - **Smooth Crossfade**: Configurable 0 to 12-second volume-fading crossfade engine between tracks.
+   - **-14 LUFS Normalization**: ITU-R BS.1770 broadcast standard loudness matching.
+   - **Analog Warmth DSP**: 220Hz low-shelf acoustic contouring filter.
+   - **LRCLIB Synchronized Lyrics**: Real-time karaoke-style lyrics synced to millisecond timestamps.
+   - **Web Media Session API**: Native lock screen & notification controls (Play/Pause/Skip/Scrub) on Android, Windows, Mac, and iOS browsers.
 
-- Node.js 18+ (tested on Node v20 & v22)
-- npm or pnpm
+2. **Living Ambient Glow**
+   - Dynamic track-tinted ambient background lighting that shifts colors smoothly with every song's artwork palette.
 
-### Installation
+3. **Multi-Device & Smart TV Mode**
+   - **Desktop Workstation**: 3-column layout with sidebar navigation, search, and now-playing inspector.
+   - **Mobile Layout**: Spotify mobile layout with sticky mini-player and bottom navigation tabs.
+   - **TV 10-Foot Mode & Fullscreen**: 
+     - Remote control D-pad spatial navigation.
+     - Support for Samsung Tizen remote Back button (`10009`), LG webOS Back button (`461`), and standard hardware Media keys.
+     - **TV Fullscreen Mode**: Click the Fullscreen button on any TV browser (Samsung Internet, LG Web Browser, VIDAA) to hide browser toolbars and run true edge-to-edge.
 
+4. **Universal Android APK (Phone & TV)**
+   - Pre-configured with Capacitor and Android TV Leanback launcher (`android.software.leanback` optional).
+   - A single universal APK runs seamlessly on Android phones, tablets, Android TV, Google TV, and Amazon Fire TV.
+   - Automated GitHub Actions CI/CD (`.github/workflows/build-apk.yml`) automatically builds the `.apk` on every push.
+
+---
+
+## 🚀 Deploying to Vercel (`aningu.vercel.app`)
+
+Aningu is pre-configured with `vercel.json` for zero-configuration Vite SPA deployment on Vercel:
+
+1. Push your repository to GitHub.
+2. Go to [Vercel](https://vercel.com) and click **"Add New Project"**.
+3. Import the `aningu` repository.
+4. Framework Preset will auto-detect as **Vite**.
+5. Click **Deploy**. Your app will be live at `https://aningu.vercel.app`!
+
+---
+
+## 📦 Building the Android APK
+
+### Option A: Automatic via GitHub Actions
+Every push to `main` triggers `.github/workflows/build-apk.yml`. 
+1. Open the **Actions** tab in your GitHub repository.
+2. Click on the latest **Build Android & TV APK** workflow run.
+3. Download the `aningu-universal-apk` artifact.
+
+### Option B: Local Build with Capacitor & Android Studio
 ```bash
-git clone https://github.com/abelmutinda9-rgb/aningu.git
-cd aningu
+# 1. Install dependencies
 npm install
-```
 
-### Development Server
-
-```bash
-npm run dev
-```
-
-Visit `http://localhost:5173` in your browser.
-
-### Production Build
-
-```bash
+# 2. Build the web dist
 npm run build
-npm run preview
+
+# 3. Add Android platform (if not already added)
+npx cap add android
+
+# 4. Sync web assets into Android project
+npm run android:sync
+
+# 5. Open in Android Studio to run on device or build signed APK
+npm run android:open
 ```
 
 ---
 
-## 🎧 Audio DSP Specifications
+## 🛠️ Development
 
-| Parameter | Value | Mode |
-| :--- | :--- | :--- |
-| Target Loudness | `-14.0 LUFS` | Integrated (ITU-R BS.1770-4) |
-| True Peak Ceiling | `-1.5 dBTP` | Inter-sample peak protection |
-| Warmth Shelf | `+2.2 dB @ 220 Hz` | Toggleable via DSP Menu |
-| De-harshing Contour | `-0.8 dB @ 8 kHz` | Toggleable via DSP Menu |
-| Default Codec | `Opus (320 kbps)` | High-Fidelity Transparent |
+```bash
+# Install dependencies
+npm install
 
----
+# Start Vite dev server
+npm run dev
 
-## 📄 License
-
-MIT © Aningu
+# Build for production
+npm run build
+```

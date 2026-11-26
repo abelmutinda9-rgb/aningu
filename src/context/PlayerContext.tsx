@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import {
   Track,
   Playlist,
@@ -11,6 +11,7 @@ import {
 import { DspEngine } from '../services/audio/dspEngine';
 import { LyricsService } from '../services/lyrics/lyricsService';
 import { SEED_TRACKS, MusicService, createPlaylistHelper } from '../services/music/musicService';
+import { DownloadService } from '../services/download/downloadService';
 
 interface PlayerContextType {
   // Current track & queue
@@ -24,6 +25,19 @@ interface PlayerContextType {
   isMuted: boolean;
   shuffle: boolean;
   repeat: 'off' | 'all' | 'one';
+
+  // Queue actions
+  addToQueue: (track: Track) => void;
+  playNext: (track: Track) => void;
+  removeFromQueue: (index: number) => void;
+  reorderQueue: (startIndex: number, endIndex: number) => void;
+  clearQueue: () => void;
+  isQueueOpen: boolean;
+  setIsQueueOpen: (open: boolean) => void;
+
+  // Crossfade (0 - 12s)
+  crossfadeDuration: number;
+  setCrossfadeDuration: (sec: number) => void;
 
   // Playlists & Catalogs
   playlists: Playlist[];
@@ -45,6 +59,21 @@ interface PlayerContextType {
   selectedPlaylist: Playlist | null;
   selectedAlbum: Album | null;
   likedTrackIds: Set<string>;
+
+  // Download & Offline playback (Spotify style)
+  downloadedTrackIds: Set<string>;
+  downloadTrack: (track: Track) => Promise<void>;
+  downloadPlaylistAction: (tracks: Track[]) => Promise<void>;
+  isDownloadingPlaylist: boolean;
+  playlistDownloadProgress: { completed: number; total: number; currentTitle: string } | null;
+
+  // Multi-Device Download Modal
+  isDownloadModalOpen: boolean;
+  setIsDownloadModalOpen: (open: boolean) => void;
+
+  // Fullscreen
+  isFullscreen: boolean;
+  toggleFullscreen: () => void;
 
   // Actions
   playTrack: (track: Track, newQueue?: Track[]) => void;
@@ -70,7 +99,7 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(SEED_TRACKS[0]);
-  const [queue, setQueue] = useState<Track[]>(SEED_TRACKS);
+  const [queue, setQueue] = useState<Track[]>(SEED_TRACKS.slice(1));
   const [history, setHistory] = useState<Track[]>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -79,6 +108,19 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [shuffle, setShuffle] = useState<boolean>(false);
   const [repeat, setRepeat] = useState<'off' | 'all' | 'one'>('off');
+
+  // Crossfade & Modals
+  const [crossfadeDuration, setCrossfadeDurationState] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('aningu_crossfade');
+      return saved !== null ? Number(saved) : 3;
+    } catch {
+      return 3;
+    }
+  });
+  const [isQueueOpen, setIsQueueOpen] = useState<boolean>(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Playlists state with localStorage persistence
   const [playlists, setPlaylists] = useState<Playlist[]>(() => MusicService.getAllPlaylists());
@@ -106,10 +148,75 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   });
 
+  // Offline / Download state
+  const [downloadedTrackIds, setDownloadedTrackIds] = useState<Set<string>>(() =>
+    DownloadService.getDownloadedTrackIds()
+  );
+  const [isDownloadingPlaylist, setIsDownloadingPlaylist] = useState<boolean>(false);
+  const [playlistDownloadProgress, setPlaylistDownloadProgress] = useState<{
+    completed: number;
+    total: number;
+    currentTitle: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const handleDownloadsUpdated = () => {
+      setDownloadedTrackIds(DownloadService.getDownloadedTrackIds());
+    };
+    window.addEventListener('aningu-downloads-updated', handleDownloadsUpdated);
+    return () => window.removeEventListener('aningu-downloads-updated', handleDownloadsUpdated);
+  }, []);
+
+  const downloadTrack = async (track: Track) => {
+    await DownloadService.downloadTrackFile(track);
+    setDownloadedTrackIds(DownloadService.getDownloadedTrackIds());
+  };
+
+  const downloadPlaylistAction = async (tracks: Track[]) => {
+    setIsDownloadingPlaylist(true);
+    setPlaylistDownloadProgress({ completed: 0, total: tracks.length, currentTitle: 'Starting...' });
+    await DownloadService.downloadPlaylist(tracks, (completed, total, currentTitle) => {
+      setPlaylistDownloadProgress({ completed, total, currentTitle });
+    });
+    setDownloadedTrackIds(DownloadService.getDownloadedTrackIds());
+    setIsDownloadingPlaylist(false);
+    setTimeout(() => setPlaylistDownloadProgress(null), 3000);
+  };
+
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const dspEngineRef = useRef<DspEngine | null>(null);
+  const isFadingRef = useRef<boolean>(false);
 
-  // Initialize Web Audio & DSP
+  const setCrossfadeDuration = (sec: number) => {
+    const val = Math.max(0, Math.min(12, sec));
+    setCrossfadeDurationState(val);
+    try {
+      localStorage.setItem('aningu_crossfade', String(val));
+    } catch {}
+  };
+
+  // Fullscreen helper
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Initialize Web Audio & Audio element
   useEffect(() => {
     const audio = new Audio();
     audio.crossOrigin = 'anonymous';
@@ -121,10 +228,23 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     audio.addEventListener('timeupdate', () => {
       setCurrentTime(audio.currentTime);
+
+      // Check crossfade trigger towards the end of track
+      if (
+        crossfadeDuration > 0 &&
+        audio.duration > crossfadeDuration * 2 &&
+        audio.currentTime >= audio.duration - crossfadeDuration &&
+        !isFadingRef.current
+      ) {
+        isFadingRef.current = true;
+        const remaining = Math.max(0.1, audio.duration - audio.currentTime);
+        fadeVolume(0, remaining);
+      }
     });
 
     audio.addEventListener('loadedmetadata', () => {
       setDuration(audio.duration || currentTrack?.duration || 0);
+      isFadingRef.current = false;
     });
 
     audio.addEventListener('ended', () => {
@@ -138,20 +258,89 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       audio.pause();
       audio.src = '';
     };
-  }, []);
+  }, [crossfadeDuration]);
+
+  // Volume fade helper for crossfades
+  const fadeVolume = (targetVol: number, seconds: number) => {
+    if (!audioElementRef.current) return;
+    const audio = audioElementRef.current;
+    const startVol = audio.volume;
+    const startTime = performance.now();
+    const durationMs = seconds * 1000;
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      const current = startVol + (targetVol - startVol) * progress;
+      if (dspEngineRef.current?.isInitialized()) {
+        dspEngineRef.current.setVolume(current);
+      } else {
+        audio.volume = current;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    };
+    requestAnimationFrame(step);
+  };
+
+  // Web Media Session API
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !currentTrack) return;
+
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentTrack.title,
+        artist: currentTrack.artist,
+        album: currentTrack.album || 'Aningu',
+        artwork: [
+          { src: currentTrack.coverUrl, sizes: '96x96', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '128x128', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '192x192', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '256x256', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '384x384', type: 'image/jpeg' },
+          { src: currentTrack.coverUrl, sizes: '512x512', type: 'image/jpeg' },
+        ],
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        togglePlayPause();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        togglePlayPause();
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        prevTrack();
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        nextTrack();
+      });
+      navigator.mediaSession.setActionHandler('seekto', details => {
+        if (details.seekTime !== undefined && details.seekTime !== null) {
+          seekTo(details.seekTime);
+        }
+      });
+    } catch {}
+  }, [currentTrack, isPlaying]);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+  }, [isPlaying]);
 
   const handleTrackEnd = () => {
     if (repeat === 'one') {
       if (audioElementRef.current) {
         audioElementRef.current.currentTime = 0;
-        audioElementRef.current.play();
+        audioElementRef.current.play().catch(() => {});
       }
     } else {
       nextTrack();
     }
   };
 
-  // Fetch lyrics whenever current track changes
   useEffect(() => {
     if (!currentTrack) return;
 
@@ -170,28 +359,51 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [currentTrack]);
 
-  // Handle track playback
   const playTrack = (track: Track, newQueue?: Track[]) => {
+    if (currentTrack) {
+      setHistory(prev => [currentTrack, ...prev]);
+    }
+
     setCurrentTrack(track);
+
     if (newQueue) {
-      setQueue(newQueue);
+      const trackIndex = newQueue.findIndex(t => t.id === track.id);
+      if (trackIndex >= 0) {
+        setQueue(newQueue.slice(trackIndex + 1));
+      } else {
+        setQueue(newQueue.filter(t => t.id !== track.id));
+      }
     }
 
     if (audioElementRef.current) {
-      // Connect DSP on first user interaction
       if (dspEngineRef.current && !dspEngineRef.current.isInitialized()) {
         dspEngineRef.current.init(audioElementRef.current);
       }
 
       audioElementRef.current.src = track.audioUrl;
       audioElementRef.current.load();
-      audioElementRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => {
-          // If browser blocks audio autoplay or source, state remains paused
-          setIsPlaying(false);
-        });
+
+      const targetVol = isMuted ? 0 : volume;
+      if (crossfadeDuration > 0) {
+        audioElementRef.current.volume = 0;
+        audioElementRef.current
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+            fadeVolume(targetVol, Math.min(1.5, crossfadeDuration / 2));
+          })
+          .catch(() => setIsPlaying(false));
+      } else {
+        if (dspEngineRef.current?.isInitialized()) {
+          dspEngineRef.current.setVolume(targetVol);
+        } else {
+          audioElementRef.current.volume = targetVol;
+        }
+        audioElementRef.current
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch(() => setIsPlaying(false));
+      }
     }
   };
 
@@ -220,22 +432,19 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const nextTrack = () => {
-    if (!currentTrack || queue.length === 0) return;
-    const currentIndex = queue.findIndex(t => t.id === currentTrack.id);
-
-    let nextIndex = 0;
-    if (shuffle) {
-      nextIndex = Math.floor(Math.random() * queue.length);
-    } else if (currentIndex >= 0 && currentIndex < queue.length - 1) {
-      nextIndex = currentIndex + 1;
-    } else if (repeat === 'all') {
-      nextIndex = 0;
-    } else {
+    if (queue.length > 0) {
+      const [next, ...rest] = queue;
+      setQueue(rest);
+      playTrack(next);
       return;
     }
 
-    setHistory(prev => [currentTrack, ...prev]);
-    playTrack(queue[nextIndex]);
+    if (repeat === 'all' && SEED_TRACKS.length > 0) {
+      playTrack(SEED_TRACKS[0], SEED_TRACKS.slice(1));
+    } else if (shuffle && SEED_TRACKS.length > 0) {
+      const randomIndex = Math.floor(Math.random() * SEED_TRACKS.length);
+      playTrack(SEED_TRACKS[randomIndex]);
+    }
   };
 
   const prevTrack = () => {
@@ -246,22 +455,48 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     if (history.length > 0) {
-      const prev = history[0];
-      setHistory(h => h.slice(1));
-      playTrack(prev);
-    } else if (currentTrack && queue.length > 0) {
-      const currentIndex = queue.findIndex(t => t.id === currentTrack.id);
-      if (currentIndex > 0) {
-        playTrack(queue[currentIndex - 1]);
+      const [prev, ...rest] = history;
+      setHistory(rest);
+      if (currentTrack) {
+        setQueue(q => [currentTrack, ...q]);
       }
+      playTrack(prev);
+    } else if (currentTrack) {
+      audioElementRef.current && (audioElementRef.current.currentTime = 0);
+      setCurrentTime(0);
     }
+  };
+
+  const addToQueue = (track: Track) => {
+    setQueue(prev => [...prev, track]);
+  };
+
+  const playNext = (track: Track) => {
+    setQueue(prev => [track, ...prev]);
+  };
+
+  const removeFromQueue = (index: number) => {
+    setQueue(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const reorderQueue = (startIndex: number, endIndex: number) => {
+    setQueue(prev => {
+      const result = Array.from(prev);
+      const [removed] = result.splice(startIndex, 1);
+      result.splice(endIndex, 0, removed);
+      return result;
+    });
+  };
+
+  const clearQueue = () => {
+    setQueue([]);
   };
 
   const setVolume = (val: number) => {
     const clamped = Math.max(0, Math.min(1, val));
     setVolumeState(clamped);
     setIsMuted(clamped === 0);
-    if (dspEngineRef.current) {
+    if (dspEngineRef.current?.isInitialized()) {
       dspEngineRef.current.setVolume(clamped);
     } else if (audioElementRef.current) {
       audioElementRef.current.volume = clamped;
@@ -274,7 +509,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setVolume(volume || 0.8);
     } else {
       setIsMuted(true);
-      if (dspEngineRef.current) {
+      if (dspEngineRef.current?.isInitialized()) {
         dspEngineRef.current.setVolume(0);
       } else if (audioElementRef.current) {
         audioElementRef.current.volume = 0;
@@ -348,6 +583,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isMuted,
         shuffle,
         repeat,
+        addToQueue,
+        playNext,
+        removeFromQueue,
+        reorderQueue,
+        clearQueue,
+        isQueueOpen,
+        setIsQueueOpen,
+        crossfadeDuration,
+        setCrossfadeDuration,
         playlists,
         createPlaylist,
         isWarmthEnabled,
@@ -357,6 +601,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           isWarmthProfile: isWarmthEnabled,
           codec: 'opus',
           bitrateKbps: 320,
+          crossfadeDuration,
         },
         lyrics,
         isLoadingLyrics,
@@ -366,6 +611,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         selectedPlaylist,
         selectedAlbum,
         likedTrackIds,
+        downloadedTrackIds,
+        downloadTrack,
+        downloadPlaylistAction,
+        isDownloadingPlaylist,
+        playlistDownloadProgress,
+        isDownloadModalOpen,
+        setIsDownloadModalOpen,
+        isFullscreen,
+        toggleFullscreen,
         playTrack,
         togglePlayPause,
         seekTo,

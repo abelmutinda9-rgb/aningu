@@ -1,25 +1,26 @@
 import React, { useState } from 'react';
 import {
   Home,
-  Search,
-  Library,
+  Mic2,
+  Smartphone,
+  Monitor,
+  Heart,
   Play,
   Pause,
   SkipBack,
   SkipForward,
-  Mic2,
+  Download,
+  Maximize,
+  Minimize,
+  ListMusic,
   QrCode,
-  Smartphone,
-  Tv,
-  Monitor,
-  Heart,
-  Volume2,
 } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
-import { BrandLogo } from '../common/BrandLogo';
+import { useTvRemote } from '../../hooks/useTvRemote';
 import { HomeView } from '../views/HomeView';
-import { SearchView } from '../views/SearchView';
-import { LibraryView } from '../views/LibraryView';
+import { AmbientBackground } from '../common/AmbientBackground';
+import { QueueModal } from '../player/QueueModal';
+import { DownloadApkModal } from '../common/DownloadApkModal';
 
 export const TvLayout: React.FC = () => {
   const {
@@ -34,12 +35,17 @@ export const TvLayout: React.FC = () => {
     likedTrackIds,
     toggleLike,
     setDeviceView,
-    viewMode,
-    setViewMode,
+    isFullscreen,
+    toggleFullscreen,
+    setIsDownloadModalOpen,
+    setIsQueueOpen,
+    queue,
   } = usePlayer();
 
   const [activeTab, setActiveTab] = useState<'now-playing' | 'browse' | 'pair'>('now-playing');
   const isLiked = currentTrack ? likedTrackIds.has(currentTrack.id) : false;
+
+  useTvRemote();
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -60,15 +66,17 @@ export const TvLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#121212] text-white font-['Figtree'] overflow-hidden select-none">
+    <div className="flex h-screen w-screen bg-[#121212] text-white font-['Figtree'] overflow-hidden select-none relative">
+      <AmbientBackground />
+
       {/* Left 10-Foot Navigation Rail */}
-      <nav className="w-24 lg:w-28 bg-[#0a0a0a] border-r border-[#1f1f1f] flex flex-col items-center justify-between py-8 shrink-0 z-20">
-        <div className="flex flex-col items-center gap-8">
+      <nav className="w-24 lg:w-28 bg-[#0a0a0a]/90 backdrop-blur-md border-r border-[#1f1f1f] flex flex-col items-center justify-between py-6 shrink-0 z-20">
+        <div className="flex flex-col items-center gap-6">
           <div className="w-12 h-12 rounded-full bg-[#1ED760] grid place-items-center text-black font-black text-xl shadow-lg">
             A
           </div>
 
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-5">
             <button
               onClick={() => setActiveTab('now-playing')}
               className={`p-3.5 rounded-2xl transition-all ${
@@ -94,6 +102,17 @@ export const TvLayout: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setIsQueueOpen(true)}
+              className="p-3.5 rounded-2xl text-[#a7a7a7] hover:text-white hover:bg-[#1a1a1a] transition-all relative"
+              title="Queue"
+            >
+              <ListMusic size={24} />
+              {queue.length > 0 && (
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#1ED760]" />
+              )}
+            </button>
+
+            <button
               onClick={() => setActiveTab('pair')}
               className={`p-3.5 rounded-2xl transition-all ${
                 activeTab === 'pair'
@@ -107,8 +126,29 @@ export const TvLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* Switch back to Desktop or Mobile view */}
+        {/* TV Utility buttons: Fullscreen, APK Download, Switch mode */}
         <div className="flex flex-col items-center gap-3">
+          {/* Fullscreen Button for TV browsers */}
+          <button
+            onClick={toggleFullscreen}
+            className={`p-2.5 rounded-full ${
+              isFullscreen ? 'bg-[#1ED760] text-black' : 'bg-[#181818] text-[#a7a7a7] hover:text-white'
+            }`}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter TV Fullscreen'}
+          >
+            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+          </button>
+
+          {/* Download APK for Android TV */}
+          <button
+            onClick={() => setIsDownloadModalOpen(true)}
+            className="p-2.5 rounded-full bg-[#181818] text-[#1ED760] hover:bg-[#222]"
+            title="Download Android TV APK"
+          >
+            <Download size={18} />
+          </button>
+
+          {/* Switch to Desktop */}
           <button
             onClick={() => setDeviceView('desktop')}
             className="p-2.5 rounded-full bg-[#181818] text-[#a7a7a7] hover:text-white"
@@ -120,32 +160,39 @@ export const TvLayout: React.FC = () => {
       </nav>
 
       {/* Main 10-Foot Content Canvas */}
-      <main className="flex-1 relative flex flex-col overflow-hidden">
-        {/* Dynamic ambient background glow */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] via-[#121212] to-black pointer-events-none" />
-
+      <main className="flex-1 relative flex flex-col overflow-hidden z-10">
         {/* Tab 1: 10-Foot Big Screen Now Playing + Giant Lyrics */}
         {activeTab === 'now-playing' && currentTrack && (
-          <div className="relative z-10 flex-1 flex flex-col justify-between p-10 lg:p-16">
+          <div className="relative z-10 flex-1 flex flex-col justify-between p-8 lg:p-14">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="w-3 h-3 rounded-full bg-[#1ED760] animate-pulse" />
                 <span className="text-sm font-bold uppercase tracking-wider text-[#1ED760]">
-                  Aningu TV 10-Foot Experience • -14 LUFS Opus
+                  Aningu TV 10-Foot Mode • Opus -14 LUFS
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 bg-[#181818] border border-[#242424] px-4 py-2 rounded-full text-xs text-[#a7a7a7]">
-                <Smartphone size={14} className="text-[#1ED760]" />
-                <span>Phone Paired (PIN: 749-012)</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleFullscreen}
+                  className="flex items-center gap-2 bg-[#181818] border border-[#242424] px-4 py-2 rounded-full text-xs text-[#a7a7a7] hover:text-white hover:border-[#1ED760]"
+                >
+                  {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+                  <span>{isFullscreen ? 'Exit TV Fullscreen' : 'TV Fullscreen (Hide Browser)'}</span>
+                </button>
+
+                <div className="flex items-center gap-2 bg-[#181818] border border-[#242424] px-4 py-2 rounded-full text-xs text-[#a7a7a7]">
+                  <Smartphone size={14} className="text-[#1ED760]" />
+                  <span>Phone Paired (PIN: 749-012)</span>
+                </div>
               </div>
             </div>
 
             {/* Split: Left Album Art + Track Info; Right: Giant Synchronized Lyrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center flex-1 my-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center flex-1 my-4">
               {/* Left Column: Artwork and Meta */}
               <div className="lg:col-span-5 flex flex-col items-center lg:items-start text-center lg:text-left">
-                <div className="w-64 h-64 lg:w-80 lg:h-80 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/5 mb-6">
+                <div className="w-60 h-60 lg:w-72 lg:h-72 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/5 mb-5">
                   <img
                     src={currentTrack.coverUrl}
                     alt={currentTrack.title}
@@ -156,12 +203,12 @@ export const TvLayout: React.FC = () => {
                 <h1 className="text-3xl lg:text-5xl font-black text-white tracking-tight leading-tight">
                   {currentTrack.title}
                 </h1>
-                <p className="text-xl text-[#a7a7a7] mt-2 font-medium">
+                <p className="text-xl text-[#a7a7a7] mt-1.5 font-medium">
                   {currentTrack.artist}
                 </p>
 
                 {/* TV Playback Control bar */}
-                <div className="flex items-center gap-6 mt-8">
+                <div className="flex items-center gap-5 mt-6">
                   <button
                     onClick={prevTrack}
                     className="w-12 h-12 rounded-full bg-[#242424] hover:bg-[#2a2a2a] grid place-items-center text-white"
@@ -196,11 +243,11 @@ export const TvLayout: React.FC = () => {
               </div>
 
               {/* Right Column: Giant Live Lyrics */}
-              <div className="lg:col-span-7 flex flex-col justify-center h-full max-h-[460px] overflow-hidden">
-                <div className="text-xs uppercase font-extrabold tracking-widest text-[#1ED760] mb-4">
+              <div className="lg:col-span-7 flex flex-col justify-center h-full max-h-[440px] overflow-hidden">
+                <div className="text-xs uppercase font-extrabold tracking-widest text-[#1ED760] mb-3">
                   Live Synced Lyrics
                 </div>
-                <div className="p-8 rounded-3xl bg-[#181818]/60 backdrop-blur-xl border border-white/5 space-y-6">
+                <div className="p-8 rounded-3xl bg-[#181818]/70 backdrop-blur-xl border border-white/5 space-y-4">
                   <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-snug drop-shadow-lg">
                     "{activeLyric}"
                   </p>
@@ -232,7 +279,7 @@ export const TvLayout: React.FC = () => {
 
         {/* Tab 2: Browse Catalog */}
         {activeTab === 'browse' && (
-          <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-10">
+          <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-8">
             <HomeView />
           </div>
         )}
@@ -262,6 +309,10 @@ export const TvLayout: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Queue and Download modals */}
+      <QueueModal />
+      <DownloadApkModal />
     </div>
   );
 };

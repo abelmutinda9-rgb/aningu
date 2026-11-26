@@ -58,6 +58,7 @@ export interface AudioEngineSettings {
   isWarmthProfile: boolean;
   codec: 'opus' | 'aac' | 'vorbis';
   bitrateKbps: number;
+  crossfadeDuration: number; // in seconds (0 - 12)
 }
 
 export interface WrappedData {

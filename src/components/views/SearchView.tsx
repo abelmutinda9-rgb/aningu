@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Play, Music, Mic2 } from 'lucide-react';
+import { Search, X, Play, Music, ListPlus } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 import { MusicService } from '../../services/music/musicService';
 import { Track } from '../../types';
@@ -30,7 +30,7 @@ export const SearchView: React.FC = () => {
   const [audiusTracks, setAudiusTracks] = useState<Track[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const { playTrack, selectAlbum, selectPlaylist } = usePlayer();
+  const { playTrack, playNext, addToQueue } = usePlayer();
 
   useEffect(() => {
     if (!query.trim()) {
@@ -143,9 +143,23 @@ export const SearchView: React.FC = () => {
                           {track.artist}
                         </div>
                       </div>
-                      <span className="text-xs text-[#a7a7a7] tabular-nums mr-2">
-                        {Math.floor(track.duration / 60)}:{Math.floor(track.duration % 60).toString().padStart(2, '0')}
-                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            playNext(track);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-[#a7a7a7] hover:text-[#1ED760] transition-opacity p-1"
+                          title="Play Next"
+                        >
+                          <ListPlus size={16} />
+                        </button>
+
+                        <span className="text-xs text-[#a7a7a7] tabular-nums mr-2">
+                          {Math.floor(track.duration / 60)}:{Math.floor(track.duration % 60).toString().padStart(2, '0')}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -175,8 +189,18 @@ export const SearchView: React.FC = () => {
                     <div className="text-sm font-bold text-white truncate">
                       {track.title}
                     </div>
-                    <div className="text-xs text-[#a7a7a7] truncate mt-0.5">
-                      {track.artist}
+                    <div className="text-xs text-[#a7a7a7] truncate mt-0.5 flex items-center justify-between">
+                      <span>{track.artist}</span>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          playNext(track);
+                        }}
+                        className="hover:text-[#1ED760] opacity-0 group-hover:opacity-100"
+                        title="Play Next"
+                      >
+                        <ListPlus size={14} />
+                      </button>
                     </div>
                   </div>
                 ))}

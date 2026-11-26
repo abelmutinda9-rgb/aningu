@@ -4,18 +4,23 @@ import {
   Search,
   Library,
   Plus,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   Heart,
-  Music,
+  Download,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import { BrandLogo } from '../common/BrandLogo';
 import { PlayerBar } from '../player/PlayerBar';
 import { FullScreenLyrics } from '../player/FullScreenLyrics';
+import { QueueModal } from '../player/QueueModal';
+import { DownloadApkModal } from '../common/DownloadApkModal';
+import { AmbientBackground } from '../common/AmbientBackground';
 import { WrappedStory } from '../wrapped/WrappedStory';
 import { usePlayer } from '../../context/PlayerContext';
+import { useTvRemote } from '../../hooks/useTvRemote';
 import { HomeView } from '../views/HomeView';
 import { SearchView } from '../views/SearchView';
 import { LibraryView } from '../views/LibraryView';
@@ -31,18 +36,27 @@ export const DesktopLayout: React.FC = () => {
     selectPlaylist,
     createPlaylist,
     likedTrackIds,
+    setIsDownloadModalOpen,
+    isFullscreen,
+    toggleFullscreen,
   } = usePlayer();
 
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
 
+  // Enable TV Remote navigation
+  useTvRemote();
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-black text-white font-['Figtree'] overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-screen bg-black text-white font-['Figtree'] overflow-hidden select-none relative">
+      {/* Dynamic Ambient Background Glow */}
+      <AmbientBackground />
+
       {/* 3-Column Workstation Main Area */}
-      <div className="flex-1 flex gap-2 p-2 min-h-0">
+      <div className="flex-1 flex gap-2 p-2 min-h-0 z-10 relative">
         {/* Left Column: Navigation & Library Sidebar */}
         <aside className="w-64 lg:w-72 flex flex-col gap-2 shrink-0">
           {/* Top Nav Card */}
-          <div className="bg-[#121212] rounded-lg p-5 flex flex-col gap-4">
+          <div className="bg-[#121212]/90 backdrop-blur-md rounded-lg p-5 flex flex-col gap-4 border border-white/5">
             <BrandLogo size="md" />
 
             <nav className="flex flex-col gap-3 mt-2">
@@ -73,7 +87,7 @@ export const DesktopLayout: React.FC = () => {
           </div>
 
           {/* Library Sidebar Card */}
-          <div className="flex-1 bg-[#121212] rounded-lg p-3 flex flex-col min-h-0">
+          <div className="flex-1 bg-[#121212]/90 backdrop-blur-md rounded-lg p-3 flex flex-col min-h-0 border border-white/5">
             <div className="flex items-center justify-between px-2 py-2">
               <button
                 onClick={() => setViewMode('library')}
@@ -133,7 +147,7 @@ export const DesktopLayout: React.FC = () => {
         </aside>
 
         {/* Center Column: Scrollable Content Container */}
-        <main className="flex-1 bg-[#121212] rounded-lg flex flex-col min-h-0 overflow-hidden relative">
+        <main className="flex-1 bg-[#121212]/90 backdrop-blur-md rounded-lg flex flex-col min-h-0 overflow-hidden relative border border-white/5">
           {/* Header Bar */}
           <header className="h-16 px-6 bg-[#121212]/95 backdrop-blur-md flex items-center justify-between border-b border-white/5 shrink-0 z-20">
             <div className="flex items-center gap-3">
@@ -153,6 +167,25 @@ export const DesktopLayout: React.FC = () => {
 
             {/* Header Right Actions */}
             <div className="flex items-center gap-3">
+              {/* Download Android APK Button */}
+              <button
+                onClick={() => setIsDownloadModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-full bg-[#242424] hover:bg-[#2c2c2c] text-white text-xs font-bold flex items-center gap-1.5 transition-colors border border-white/10 hover:border-[#1ED760]"
+                title="Download APK for Android & TV"
+              >
+                <Download size={14} className="text-[#1ED760]" />
+                <span>Download App</span>
+              </button>
+
+              {/* Fullscreen TV / Desktop toggle */}
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 rounded-full bg-[#242424] hover:bg-[#2c2c2c] text-[#a7a7a7] hover:text-white transition-colors"
+                title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Mode (TV/Desktop)'}
+              >
+                {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+              </button>
+
               <button
                 onClick={() => setViewMode('wrapped')}
                 className="px-3 py-1.5 rounded-full bg-[#1ED760]/15 hover:bg-[#1ED760]/25 text-[#1ED760] text-xs font-extrabold flex items-center gap-1.5 transition-colors border border-[#1ED760]/30"
@@ -179,7 +212,7 @@ export const DesktopLayout: React.FC = () => {
 
         {/* Right Column: Now Playing Inspector Panel */}
         {isRightPanelOpen && currentTrack && (
-          <aside className="w-72 lg:w-80 bg-[#121212] rounded-lg p-4 flex flex-col gap-4 shrink-0 overflow-y-auto custom-scrollbar">
+          <aside className="w-72 lg:w-80 bg-[#121212]/90 backdrop-blur-md rounded-lg p-4 flex flex-col gap-4 shrink-0 overflow-y-auto custom-scrollbar border border-white/5">
             <div className="flex items-center justify-between pb-2 border-b border-[#242424]">
               <span className="text-sm font-bold text-white">Now Playing</span>
               <button
@@ -237,6 +270,12 @@ export const DesktopLayout: React.FC = () => {
 
       {/* Fullscreen Lyrics Overlay (when active) */}
       <FullScreenLyrics />
+
+      {/* Up Next Play Queue Drawer */}
+      <QueueModal />
+
+      {/* Download Android APK Modal */}
+      <DownloadApkModal />
 
       {/* Wrapped Interactive Story Overlay (when active) */}
       {viewMode === 'wrapped' && (
